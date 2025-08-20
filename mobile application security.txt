@@ -1,0 +1,21 @@
+    # Example Frida script for observing file writes (Android)
+    import frida
+
+    def on_message(message, data):
+        print(f"[{message['type']}] => {message['payload']}")
+
+    jscode = """
+    Java.perform(function () {
+        var FileOutputStream = Java.use('java.io.FileOutputStream');
+        FileOutputStream.constructor.overload('java.io.File').implementation = function (file) {
+            console.log("FileOutputStream opened file: " + file.getAbsolutePath());
+            return this.constructor.overload('java.io.File').call(this, file);
+        };
+    });
+    """
+
+    process = frida.get_usb_device().attach("com.example.app") # Replace with target package name
+    script = process.create_script(jscode)
+    script.on('message', on_message)
+    script.load()
+    input() # Keep the script running
